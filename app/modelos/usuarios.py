@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field, EmailStr
-from typing import Annotated
+from sqlalchemy import Column, Integer, String
+from app.backend.conexion import Base
 
-class Usuario(BaseModel):
-    correo: EmailStr
-    password: Annotated[str, Field(min_length=8, max_length=100, pattern=r'^[A-Za-z\d@$!%*?&]{8,}$')]
+class Usuario(Base):
+    __tablename__ = "usuarios"
+    id = Column(Integer, primary_key=True, index=True)
+    correo = Column(String(100), unique=True, nullable=False)
+    password = Column(String(100), nullable=False)

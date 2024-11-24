@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field, condecimal
-from decimal import Decimal
+from sqlalchemy import Column, Integer, String
+from app.backend.conexion import Base
 
-class Accesorio(BaseModel):
-    nombre: str = Field(..., min_length=2, max_length=50)
-    valor: Decimal = condecimal(gt=0, decimal_places=2)
+class Accesorio(Base):
+    __tablename__ = "accesorios"
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String(100), nullable=False)
+    valor = Column(String(50), nullable=False)

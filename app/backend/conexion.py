@@ -1,14 +1,16 @@
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-import mysql.connector
+DATABASE_URL = "mysql+mysqlconnector://root:1234@localhost/bdmoto2"
 
-mysql_config = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': '1234',
-    'database': 'bdmoto2',
-    'auth_plugin': 'mysql_native_password'
-}
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
-connection = mysql.connector.connect(**mysql_config)
-def get_connection():
-    return connection
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

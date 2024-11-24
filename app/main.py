@@ -1,246 +1,124 @@
-from fastapi import FastAPI, HTTPException, Form
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-import mysql.connector
-from app.backend.conexion import connection
-from app.modelos.usuarios import Usuario
-from app.modelos.accesorios import Accesorio
-from fastapi.requests import Request
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from app.backend.conexion import get_db
+from app.modelos.usuarios import Usuario as UsuarioModel
+from app.modelos.accesorios import Accesorio as AccesorioModel
 
-
-# Crear instancia de FastAPI
 app = FastAPI()
 
-# Configuración de plantillas y archivos estáticos
-templates = Jinja2Templates(directory="app/sign-in")
-app.mount("/static", StaticFiles(directory="app/sign-in"), name="static")
-
-# Middleware CORS para permitir solicitudes desde cualquier origen
+# Configuración de CORS para permitir solicitudes del Frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Cambiar "*" por la URL específica del Frontend si es necesario
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Endpoint raíz (/) para mostrar un mensaje de bienvenida
-@app.get("/")
-async def root():
-    return {"message": "¡Bienvenido a mi API con FastAPI!"}
+# Configuración de plantillas y archivos estáticos
+templates = Jinja2Templates(directory="app/sign-in")
+app.mount("/static", StaticFiles(directory="app/sign-in"), name="static")
 
-# Endpoint para renderizar el formulario de login
-@app.get("/login", response_class=HTMLResponse)
-async def render_login(request: Request):
-    user_name = "Invitado"
-    return templates.TemplateResponse("index.html", {"request": request, "user_name": user_name})
+# Endpoint para renderizar el index
+@app.get("/", response_class=HTMLResponse)
+def render_index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-# CRUD para usuarios
-@app.get('/usuarios')
-async def get_usuarios():
-    cursor = connection.cursor(dictionary=True)
-    query = 'SELECT * FROM usuarios'
-
-    try:
-        cursor.execute(query)
-        users = cursor.fetchall()
-        return users
-    except mysql.connector.Error as err:
-        raise HTTPException(
-            status_code=500, detail=f"Error al obtener los usuarios: {err}")
-    finally:
-        cursor.close()
-
-@app.get('/usuarios/{usuario_id}')
-async def get_usuario(usuario_id: int):
-    cursor = connection.cursor(dictionary=True)
-    query = 'SELECT * FROM usuarios WHERE id = %s'
-    values = (usuario_id,)
-
-    try:
-        cursor.execute(query, values)
-        user = cursor.fetchone()
-        if user:
-            return user
-        else:
-            raise HTTPException(
-                status_code=404, detail=f"Usuario con id {usuario_id} no encontrado")
-    except mysql.connector.Error as err:
-        raise HTTPException(
-            status_code=500, detail=f"Error al obtener el usuario: {err}")
-    finally:
-        cursor.close()
-
-@app.post('/usuarios')
-async def create_usuario(usuario: Usuario):
-    cursor = connection.cursor()
-    query = 'INSERT INTO usuarios (correo, password) VALUES (%s, %s)'
-    values = (usuario.correo, usuario.password)
-
-    try:
-        cursor.execute(query, values)
-        connection.commit()
-        return {"message": "Usuario creado correctamente"}
-    except mysql.connector.Error as err:
-        raise HTTPException(
-            status_code=500, detail=f"Error al crear el usuario: {err}")
-    finally:
-        cursor.close()
-
-@app.put('/usuarios/{usuario_id}')
-async def update_usuario(usuario_id: int, usuario: Usuario):
-    cursor = connection.cursor()
-    query = 'UPDATE usuarios SET correo = %s, password = %s WHERE id = %s'
-    values = (usuario.correo, usuario.password, usuario_id)
-
-    try:
-        cursor.execute(query, values)
-        connection.commit()
-        if cursor.rowcount == 0:
-            raise HTTPException(
-                status_code=404, detail=f"Usuario con id {usuario_id} no encontrado")
-        return {"message": "Usuario actualizado correctamente"}
-    except mysql.connector.Error as err:
-        raise HTTPException(
-            status_code=500, detail=f"Error al actualizar el usuario: {err}")
-    finally:
-        cursor.close()
-
-@app.delete('/usuarios/{usuario_id}')
-async def delete_usuario(usuario_id: int):
-    cursor = connection.cursor()
-    query = 'DELETE FROM usuarios WHERE id = %s'
-    values = (usuario_id,)
-
-    try:
-        cursor.execute(query, values)
-        connection.commit()
-        if cursor.rowcount == 0:
-            raise HTTPException(
-                status_code=404, detail=f"Usuario con id {usuario_id} no encontrado")
-        return {"message": "Usuario eliminado correctamente"}
-    except mysql.connector.Error as err:
-        raise HTTPException(
-            status_code=500, detail=f"Error al eliminar el usuario: {err}")
-    finally:
-        cursor.close()
-
-# CRUD para accesorios
-@app.get('/accesorios')
-async def get_accesorios():
-    cursor = connection.cursor(dictionary=True)
-    query = 'SELECT * FROM accesorios'
-
-    try:
-        cursor.execute(query)
-        products = cursor.fetchall()
-        return products
-    except mysql.connector.Error as err:
-        raise HTTPException(
-            status_code=500, detail=f"Error al obtener los accesorios: {err}")
-    finally:
-        cursor.close()
-
-@app.get('/accesorios/{accesorios_id}')
-async def get_accesorio(accesorios_id: int):
-    cursor = connection.cursor(dictionary=True)
-    query = 'SELECT * FROM accesorios WHERE id = %s'
-    values = (accesorios_id,)
-
-    try:
-        cursor.execute(query, values)
-        product = cursor.fetchone()
-        if product:
-            return product
-        else:
-            raise HTTPException(
-                status_code=404, detail=f"Accesorio con id {accesorios_id} no encontrado")
-    except mysql.connector.Error as err:
-        raise HTTPException(
-            status_code=500, detail=f"Error al obtener el accesorio: {err}")
-    finally:
-        cursor.close()
-
-@app.post('/accesorios')
-async def create_accesorio(accesorios: Accesorio):
-    cursor = connection.cursor()
-    query = 'INSERT INTO accesorios (nombre, valor) VALUES (%s, %s)'
-    values = (accesorios.nombre, accesorios.valor)
-
-    try:
-        cursor.execute(query, values)
-        connection.commit()
-        return {"message": "Accesorio creado correctamente"}
-    except mysql.connector.Error as err:
-        raise HTTPException(
-            status_code=500, detail=f"Error al crear el accesorio: {err}")
-    finally:
-        cursor.close()
-
-@app.put('/accesorios/{accesorios_id}')
-async def update_accesorio(accesorios_id: int, accesorios: Accesorio):
-    cursor = connection.cursor()
-    query = 'UPDATE accesorios SET nombre = %s, valor = %s WHERE id = %s'
-    values = (accesorios.nombre, accesorios.valor, accesorios_id)
-
-    try:
-        cursor.execute(query, values)
-        connection.commit()
-        if cursor.rowcount == 0:
-            raise HTTPException(
-                status_code=404, detail=f"Accesorio con id {accesorios_id} no encontrado")
-        return {"message": "Accesorio actualizado correctamente"}
-    except mysql.connector.Error as err:
-        raise HTTPException(
-            status_code=500, detail=f"Error al actualizar el accesorio: {err}")
-    finally:
-        cursor.close()
-
-@app.delete('/accesorios/{accesorios_id}')
-async def delete_accesorio(accesorios_id: int):
-    cursor = connection.cursor()
-    query = 'DELETE FROM accesorios WHERE id = %s'
-    values = (accesorios_id,)
-
-    try:
-        cursor.execute(query, values)
-        connection.commit()
-        if cursor.rowcount == 0:
-            raise HTTPException(
-                status_code=404, detail=f"Accesorio con id {accesorios_id} no encontrado")
-        return {"message": "Accesorio eliminado correctamente"}
-    except mysql.connector.Error as err:
-        raise HTTPException(
-            status_code=500, detail=f"Error al eliminar el accesorio: {err}")
-    finally:
-        cursor.close()
-        
-@app.get("/login", response_class=HTMLResponse)
-async def login_form(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "user_name": "Invitado"})        
+# Endpoint para renderizar el dashboard
+@app.get("/dashboard", response_class=HTMLResponse)
+def render_dashboard(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 @app.post('/login')
-def login(usuario: Usuario):
-    cursor = connection.cursor(dictionary=True)
-    query = 'SELECT * FROM usuarios WHERE correo = %s AND password = %s'
-    values = (usuario.correo, usuario.password)
+def login_usuario(credentials: dict, db: Session = Depends(get_db)):
+    correo = credentials.get("correo")
+    password = credentials.get("password")
+    if not correo or not password:
+        raise HTTPException(status_code=400, detail="Correo y contraseña son requeridos")
 
-    try:
-        cursor.execute(query, values)
-        user = cursor.fetchone()
-        if user:
-            return {"message": "Usuario autenticado correctamente"}
-        else:
-            raise HTTPException(
-                status_code=404, detail="Usuario no encontrado o contraseña incorrecta"
-            )
-    except mysql.connector.Error as err:
-        raise HTTPException(
-            status_code=500, detail=f"Error al autenticar el usuario: {err}"
-        )
-    finally:
-        cursor.close()
+    user = db.query(UsuarioModel).filter(UsuarioModel.correo == correo).first()
+    if not user or user.password != password:
+        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+    
+    return {"message": "Inicio de sesión exitoso", "correo": user.correo}
 
 
+# CRUD para Usuarios
+@app.post("/usuarios/")
+def create_usuario(correo: str, password: str, db: Session = Depends(get_db)):
+    existing_user = db.query(UsuarioModel).filter(UsuarioModel.correo == correo).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="El correo ya está registrado")
+    nuevo_usuario = UsuarioModel(correo=correo, password=password)
+    db.add(nuevo_usuario)
+    db.commit()
+    db.refresh(nuevo_usuario)
+    return {"message": "Usuario creado correctamente"}
+
+@app.get("/usuarios/")
+def get_usuarios(db: Session = Depends(get_db)):
+    return db.query(UsuarioModel).all()
+
+@app.put("/usuarios/{usuario_id}")
+def update_usuario(usuario_id: int, correo: str, password: str, db: Session = Depends(get_db)):
+    usuario = db.query(UsuarioModel).filter(UsuarioModel.id == usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    usuario.correo = correo
+    usuario.password = password
+    db.commit()
+    db.refresh(usuario)
+    return {"message": "Usuario actualizado correctamente"}
+
+@app.delete("/usuarios/{usuario_id}")
+def delete_usuario(usuario_id: int, db: Session = Depends(get_db)):
+    usuario = db.query(UsuarioModel).filter(UsuarioModel.id == usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    db.delete(usuario)
+    db.commit()
+    return {"message": f"Usuario con ID {usuario_id} eliminado correctamente."}
+
+# CRUD para Accesorios
+@app.post("/accesorios/")
+def create_accesorio(nombre: str, valor: str, db: Session = Depends(get_db)):
+    nuevo_accesorio = AccesorioModel(nombre=nombre, valor=valor)
+    db.add(nuevo_accesorio)
+    db.commit()
+    db.refresh(nuevo_accesorio)
+    return {"message": "Accesorio creado correctamente"}
+
+@app.get("/accesorios/")
+def get_accesorios(db: Session = Depends(get_db)):
+    return db.query(AccesorioModel).all()
+
+@app.put("/accesorios/{accesorio_id}")
+def update_accesorio(accesorio_id: int, nombre: str, valor: str, db: Session = Depends(get_db)):
+    accesorio = db.query(AccesorioModel).filter(AccesorioModel.id == accesorio_id).first()
+    if not accesorio:
+        raise HTTPException(status_code=404, detail="Accesorio no encontrado")
+    accesorio.nombre = nombre
+    accesorio.valor = valor
+    db.commit()
+    db.refresh(accesorio)
+    return {"message": "Accesorio actualizado correctamente"}
+
+@app.delete("/accesorios/{accesorio_id}")
+def delete_accesorio(accesorio_id: int, db: Session = Depends(get_db)):
+    accesorio = db.query(AccesorioModel).filter(AccesorioModel.id == accesorio_id).first()
+    if not accesorio:
+        raise HTTPException(status_code=404, detail="Accesorio no encontrado")
+    db.delete(accesorio)
+    db.commit()
+    return {"message": f"Accesorio con ID {accesorio_id} eliminado correctamente."}
+
+@app.get("/usuarios/actual")
+def get_current_user(correo: str, db: Session = Depends(get_db)):
+    user = db.query(UsuarioModel).filter(UsuarioModel.correo == correo).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return {"correo": user.correo}
