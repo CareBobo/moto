@@ -12,3 +12,7 @@
 # backend , fronted, fastapi , sqlalchemy ,mysql, python, html, boostrap 5 json etc...
 
 # integrante DAVID PEREZ VEGA
+
+
+# link de pagina en nube 
+# https://astonishing-basbousa-245594.netlify.app/
